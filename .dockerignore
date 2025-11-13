@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Data and results (persist via volumes)
+data/*.csv
+results/*.csv
+results/*.png
+exports/
+
+# Tests
+test_*.py
+*_test.py
+
+# Docs
+docs/
+*.md
+!README.md
+
+# Other
+.DS_Store
+leads.csv
+__pycache__

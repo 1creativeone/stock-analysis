@@ -1,7 +1,7 @@
 # screener.py
 import yfinance as yf
 import pandas as pd
-from patterns import double_bottom, rsi_divergence, breakout_52w
+from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross, cup_and_handle, bollinger_reversion
 from backtester import vectorized_backtest
 from tqdm import tqdm
 import os
@@ -104,11 +104,15 @@ def run_full_scan(tickers=None, top_n=5, min_trades=3):
             if len(df) < 500:
                 continue
 
-            # Run all 3 patterns
+            # Run all patterns
             patterns = {
                 'Double Bottom': double_bottom(df),
                 'RSI Divergence': rsi_divergence(df),
-                '52W Breakout': breakout_52w(df)
+                '52W Breakout': breakout_52w(df),
+                'EMA Crossover': ema_crossover(df),
+                'MACD Cross': macd_cross(df),
+                'Cup & Handle': cup_and_handle(df),
+                'Bollinger Reversion': bollinger_reversion(df)
             }
 
             for name, signal in patterns.items():
@@ -127,10 +131,15 @@ def run_full_scan(tickers=None, top_n=5, min_trades=3):
                     'ticker': ticker,
                     'pattern': name,
                     'sharpe': bt['sharpe'],
+                    'sortino': bt['sortino'],
+                    'calmar': bt['calmar'],
+                    'profit_factor': bt['profit_factor'],
                     'cagr': bt['cagr'],
                     'max_dd': bt['max_dd'],
                     'win_rate': bt['win_rate'],
                     'num_trades': bt['num_trades'],
+                    'max_consecutive_wins': bt['max_consecutive_wins'],
+                    'max_consecutive_losses': bt['max_consecutive_losses'],
                     'latest_signal': bt['signal_dates'][-1] if bt['signal_dates'] else None,
                 })
 

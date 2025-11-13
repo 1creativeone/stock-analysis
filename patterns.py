@@ -93,3 +93,179 @@ def breakout_52w(df: pd.DataFrame) -> pd.Series:
     """
     high_52w = df['High'].rolling(252).max().shift(1)
     return df['Close'] > high_52w
+
+
+def calculate_ema(series: pd.Series, period: int) -> pd.Series:
+    """
+    Calculate Exponential Moving Average (EMA).
+
+    Args:
+        series: Price series
+        period: EMA period
+
+    Returns:
+        EMA values
+    """
+    return series.ewm(span=period, adjust=False).mean()
+
+
+def ema_crossover(df: pd.DataFrame, fast_period=12, slow_period=26, volume_filter=True) -> pd.Series:
+    """
+    Detect EMA Crossover (Golden Cross).
+
+    Returns boolean Series: True when fast EMA crosses above slow EMA.
+
+    Rules:
+    - Fast EMA (default: 12) crosses above slow EMA (default: 26)
+    - Optional volume filter: volume > 20-day average
+    - Uses shift(1) to avoid look-ahead bias
+    """
+    fast_ema = calculate_ema(df['Close'], fast_period)
+    slow_ema = calculate_ema(df['Close'], slow_period)
+
+    # Detect crossover: fast crosses above slow
+    crossover = (fast_ema > slow_ema) & (fast_ema.shift(1) <= slow_ema.shift(1))
+
+    # Apply volume filter if enabled
+    if volume_filter and 'Volume' in df.columns:
+        avg_volume = df['Volume'].rolling(20).mean()
+        volume_check = df['Volume'] > avg_volume
+        crossover = crossover & volume_check
+
+    return crossover
+
+
+def calculate_macd(df: pd.DataFrame, fast=12, slow=26, signal=9):
+    """
+    Calculate MACD (Moving Average Convergence Divergence).
+
+    Args:
+        df: DataFrame with price data
+        fast: Fast EMA period (default: 12)
+        slow: Slow EMA period (default: 26)
+        signal: Signal line period (default: 9)
+
+    Returns:
+        tuple: (MACD line, Signal line, Histogram)
+    """
+    fast_ema = calculate_ema(df['Close'], fast)
+    slow_ema = calculate_ema(df['Close'], slow)
+
+    macd_line = fast_ema - slow_ema
+    signal_line = calculate_ema(macd_line, signal)
+    histogram = macd_line - signal_line
+
+    return macd_line, signal_line, histogram
+
+
+def macd_cross(df: pd.DataFrame, fast=12, slow=26, signal=9, histogram_confirm=True) -> pd.Series:
+    """
+    Detect MACD Cross with Histogram Confirmation.
+
+    Returns boolean Series: True when MACD crosses above signal line.
+
+    Rules:
+    - MACD line crosses above signal line
+    - Optional histogram confirmation: histogram must be positive and increasing
+    - Uses shift(1) to avoid look-ahead bias
+    """
+    macd_line, signal_line, histogram = calculate_macd(df, fast, slow, signal)
+
+    # Detect crossover: MACD crosses above signal
+    crossover = (macd_line > signal_line) & (macd_line.shift(1) <= signal_line.shift(1))
+
+    # Apply histogram confirmation if enabled
+    if histogram_confirm:
+        # Histogram positive and increasing
+        hist_positive = histogram > 0
+        hist_increasing = histogram > histogram.shift(1)
+        crossover = crossover & hist_positive & hist_increasing
+
+    return crossover
+
+
+def cup_and_handle(df: pd.DataFrame, cup_depth=0.15, handle_depth=0.08, lookback=120) -> pd.Series:
+    """
+    Detect Cup and Handle pattern with breakout.
+
+    Returns boolean Series: True when handle breaks out.
+
+    Rules:
+    - Price forms U-shape (cup) over lookback period
+    - Followed by smaller pullback (handle)
+    - Breakout above handle high on volume
+    """
+    signals = pd.Series(False, index=df.index)
+
+    for i in range(lookback + 20, len(df)):
+        # Check for cup formation
+        window = df.iloc[i-lookback:i]
+        cup_high = window['High'].max()
+        cup_low = window['Low'].min()
+        cup_drop = (cup_high - cup_low) / cup_high
+
+        # Cup should be 15%+ deep
+        if cup_drop < cup_depth:
+            continue
+
+        # Check for handle (last 20 bars)
+        handle = df.iloc[i-20:i]
+        handle_high = handle['High'].max()
+        handle_low = handle['Low'].min()
+        handle_drop = (handle_high - handle_low) / handle_high
+
+        # Handle should be smaller pullback
+        if handle_drop > handle_depth or handle_drop < 0.02:
+            continue
+
+        # Breakout: close above handle high
+        if df['Close'].iloc[i] > handle_high:
+            # Volume confirmation
+            if 'Volume' in df.columns:
+                avg_vol = df['Volume'].iloc[i-20:i].mean()
+                if df['Volume'].iloc[i] > avg_vol * 1.2:
+                    signals.iloc[i] = True
+            else:
+                signals.iloc[i] = True
+
+    return signals
+
+
+def bollinger_reversion(df: pd.DataFrame, period=20, std_dev=2.0, lookback=5) -> pd.Series:
+    """
+    Detect Bollinger Band Mean Reversion.
+
+    Returns boolean Series: True when price bounces off lower band.
+
+    Rules:
+    - Price touches or breaks below lower Bollinger Band
+    - Followed by reversal back inside bands
+    - RSI oversold confirmation (optional)
+    """
+    # Calculate Bollinger Bands
+    sma = df['Close'].rolling(period).mean()
+    std = df['Close'].rolling(period).std()
+
+    upper_band = sma + (std * std_dev)
+    lower_band = sma - (std * std_dev)
+
+    signals = pd.Series(False, index=df.index)
+
+    for i in range(period + lookback, len(df)):
+        # Check if price touched lower band recently
+        recent = df['Low'].iloc[i-lookback:i]
+        touched_lower = (recent <= lower_band.iloc[i-lookback:i]).any()
+
+        if not touched_lower:
+            continue
+
+        # Check for reversal: close back above lower band
+        if df['Close'].iloc[i] > lower_band.iloc[i]:
+            # Optional RSI confirmation
+            rsi_val = calculate_rsi(df['Close'], period=14).iloc[i]
+            if pd.notna(rsi_val) and rsi_val < 35:  # Oversold
+                signals.iloc[i] = True
+            elif pd.isna(rsi_val):
+                signals.iloc[i] = True
+
+    return signals

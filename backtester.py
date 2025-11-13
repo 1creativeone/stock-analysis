@@ -71,13 +71,54 @@ def vectorized_backtest(df: pd.DataFrame, signal: pd.Series, initial_cash=100_00
     # Signal dates
     signal_dates = df.index[sig].tolist()
 
+    # Sortino Ratio: like Sharpe but only penalizes downside volatility
+    downside_returns = strategy_returns[strategy_returns < 0]
+    downside_std = downside_returns.std()
+    sortino = np.sqrt(252) * mean_return / downside_std if downside_std > 0 else np.nan
+
+    # Calmar Ratio: CAGR / Max Drawdown
+    calmar = abs(cagr / max_dd) if max_dd != 0 else np.nan
+
+    # Profit Factor: Gross Profits / Gross Losses
+    gross_profits = strategy_returns[strategy_returns > 0].sum()
+    gross_losses = abs(strategy_returns[strategy_returns < 0].sum())
+    profit_factor = gross_profits / gross_losses if gross_losses != 0 else np.nan
+
+    # Max consecutive wins/losses
+    trade_results = strategy_returns[sig.shift(1).fillna(False)]
+    wins = (trade_results > 0).astype(int)
+    losses = (trade_results < 0).astype(int)
+
+    max_consecutive_wins = 0
+    max_consecutive_losses = 0
+    current_wins = 0
+    current_losses = 0
+
+    for result in trade_results:
+        if result > 0:
+            current_wins += 1
+            current_losses = 0
+            max_consecutive_wins = max(max_consecutive_wins, current_wins)
+        elif result < 0:
+            current_losses += 1
+            current_wins = 0
+            max_consecutive_losses = max(max_consecutive_losses, current_losses)
+        else:
+            current_wins = 0
+            current_losses = 0
+
     return {
         'equity': equity,
         'total_return': total_return,
         'cagr': cagr,
         'sharpe': sharpe,
+        'sortino': sortino,
+        'calmar': calmar,
+        'profit_factor': profit_factor,
         'max_dd': max_dd,
         'win_rate': win_rate,
         'num_trades': num_trades,
+        'max_consecutive_wins': max_consecutive_wins,
+        'max_consecutive_losses': max_consecutive_losses,
         'signal_dates': signal_dates
     }
