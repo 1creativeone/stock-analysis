@@ -16,7 +16,7 @@ from datetime import datetime
 import subprocess
 
 # Import local modules
-from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross
+from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross, cup_and_handle, bollinger_reversion
 from backtester import vectorized_backtest
 
 # ==================== CONFIG ====================
@@ -96,6 +96,10 @@ def get_pattern_signal(df, pattern_name):
         return ema_crossover(df)
     elif pattern_name == 'MACD Cross':
         return macd_cross(df)
+    elif pattern_name == 'Cup & Handle':
+        return cup_and_handle(df)
+    elif pattern_name == 'Bollinger Reversion':
+        return bollinger_reversion(df)
     return None
 
 

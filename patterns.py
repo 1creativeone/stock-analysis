@@ -182,3 +182,90 @@ def macd_cross(df: pd.DataFrame, fast=12, slow=26, signal=9, histogram_confirm=T
         crossover = crossover & hist_positive & hist_increasing
 
     return crossover
+
+
+def cup_and_handle(df: pd.DataFrame, cup_depth=0.15, handle_depth=0.08, lookback=120) -> pd.Series:
+    """
+    Detect Cup and Handle pattern with breakout.
+
+    Returns boolean Series: True when handle breaks out.
+
+    Rules:
+    - Price forms U-shape (cup) over lookback period
+    - Followed by smaller pullback (handle)
+    - Breakout above handle high on volume
+    """
+    signals = pd.Series(False, index=df.index)
+
+    for i in range(lookback + 20, len(df)):
+        # Check for cup formation
+        window = df.iloc[i-lookback:i]
+        cup_high = window['High'].max()
+        cup_low = window['Low'].min()
+        cup_drop = (cup_high - cup_low) / cup_high
+
+        # Cup should be 15%+ deep
+        if cup_drop < cup_depth:
+            continue
+
+        # Check for handle (last 20 bars)
+        handle = df.iloc[i-20:i]
+        handle_high = handle['High'].max()
+        handle_low = handle['Low'].min()
+        handle_drop = (handle_high - handle_low) / handle_high
+
+        # Handle should be smaller pullback
+        if handle_drop > handle_depth or handle_drop < 0.02:
+            continue
+
+        # Breakout: close above handle high
+        if df['Close'].iloc[i] > handle_high:
+            # Volume confirmation
+            if 'Volume' in df.columns:
+                avg_vol = df['Volume'].iloc[i-20:i].mean()
+                if df['Volume'].iloc[i] > avg_vol * 1.2:
+                    signals.iloc[i] = True
+            else:
+                signals.iloc[i] = True
+
+    return signals
+
+
+def bollinger_reversion(df: pd.DataFrame, period=20, std_dev=2.0, lookback=5) -> pd.Series:
+    """
+    Detect Bollinger Band Mean Reversion.
+
+    Returns boolean Series: True when price bounces off lower band.
+
+    Rules:
+    - Price touches or breaks below lower Bollinger Band
+    - Followed by reversal back inside bands
+    - RSI oversold confirmation (optional)
+    """
+    # Calculate Bollinger Bands
+    sma = df['Close'].rolling(period).mean()
+    std = df['Close'].rolling(period).std()
+
+    upper_band = sma + (std * std_dev)
+    lower_band = sma - (std * std_dev)
+
+    signals = pd.Series(False, index=df.index)
+
+    for i in range(period + lookback, len(df)):
+        # Check if price touched lower band recently
+        recent = df['Low'].iloc[i-lookback:i]
+        touched_lower = (recent <= lower_band.iloc[i-lookback:i]).any()
+
+        if not touched_lower:
+            continue
+
+        # Check for reversal: close back above lower band
+        if df['Close'].iloc[i] > lower_band.iloc[i]:
+            # Optional RSI confirmation
+            rsi_val = calculate_rsi(df['Close'], period=14).iloc[i]
+            if pd.notna(rsi_val) and rsi_val < 35:  # Oversold
+                signals.iloc[i] = True
+            elif pd.isna(rsi_val):
+                signals.iloc[i] = True
+
+    return signals

@@ -1,7 +1,7 @@
 # screener.py
 import yfinance as yf
 import pandas as pd
-from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross
+from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross, cup_and_handle, bollinger_reversion
 from backtester import vectorized_backtest
 from tqdm import tqdm
 import os
@@ -110,7 +110,9 @@ def run_full_scan(tickers=None, top_n=5, min_trades=3):
                 'RSI Divergence': rsi_divergence(df),
                 '52W Breakout': breakout_52w(df),
                 'EMA Crossover': ema_crossover(df),
-                'MACD Cross': macd_cross(df)
+                'MACD Cross': macd_cross(df),
+                'Cup & Handle': cup_and_handle(df),
+                'Bollinger Reversion': bollinger_reversion(df)
             }
 
             for name, signal in patterns.items():
