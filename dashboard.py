@@ -16,7 +16,7 @@ from datetime import datetime
 import subprocess
 
 # Import local modules
-from patterns import double_bottom, rsi_divergence, breakout_52w
+from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover, macd_cross
 from backtester import vectorized_backtest
 
 # ==================== CONFIG ====================
@@ -92,6 +92,10 @@ def get_pattern_signal(df, pattern_name):
         return rsi_divergence(df)
     elif pattern_name == '52W Breakout':
         return breakout_52w(df)
+    elif pattern_name == 'EMA Crossover':
+        return ema_crossover(df)
+    elif pattern_name == 'MACD Cross':
+        return macd_cross(df)
     return None
 
 
@@ -224,11 +228,47 @@ with col5:
 
 st.markdown("---")
 
-# ==================== TOP 5 TABLE ====================
-st.markdown("### 🏆 Top 5 Signals (Ranked by Sharpe)")
+# ==================== FILTERS ====================
+st.markdown("### 🔍 Filter Results")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    # Pattern filter
+    all_patterns = ['All'] + sorted(results_df['pattern'].unique().tolist())
+    pattern_filter = st.selectbox("Pattern", all_patterns)
+
+with col2:
+    # Sharpe filter
+    min_sharpe = st.number_input("Min Sharpe", value=0.0, step=0.1, format="%.1f")
+
+with col3:
+    # CAGR filter
+    min_cagr = st.number_input("Min CAGR (%)", value=0.0, step=5.0, format="%.1f")
+
+with col4:
+    # Min trades filter
+    min_trades_filter = st.number_input("Min Trades", value=1, step=1, min_value=1)
+
+# Apply filters
+filtered_df = results_df.copy()
+
+if pattern_filter != 'All':
+    filtered_df = filtered_df[filtered_df['pattern'] == pattern_filter]
+
+filtered_df = filtered_df[filtered_df['sharpe'] >= min_sharpe]
+filtered_df = filtered_df[filtered_df['cagr'] >= (min_cagr / 100)]
+filtered_df = filtered_df[filtered_df['num_trades'] >= min_trades_filter]
+
+st.caption(f"Showing {len(filtered_df)} of {len(results_df)} signals")
+
+st.markdown("---")
+
+# ==================== TOP SIGNALS TABLE ====================
+st.markdown("### 🏆 Top Signals (Ranked by Sharpe)")
 
 # Format the display
-display_df = results_df.copy()
+display_df = filtered_df.copy()
 display_df['sharpe'] = display_df['sharpe'].apply(lambda x: f"{x:.2f}")
 display_df['cagr'] = display_df['cagr'].apply(lambda x: f"{x:.1%}")
 display_df['max_dd'] = display_df['max_dd'].apply(lambda x: f"{x:.1%}")

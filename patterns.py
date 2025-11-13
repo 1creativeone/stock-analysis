@@ -93,3 +93,92 @@ def breakout_52w(df: pd.DataFrame) -> pd.Series:
     """
     high_52w = df['High'].rolling(252).max().shift(1)
     return df['Close'] > high_52w
+
+
+def calculate_ema(series: pd.Series, period: int) -> pd.Series:
+    """
+    Calculate Exponential Moving Average (EMA).
+
+    Args:
+        series: Price series
+        period: EMA period
+
+    Returns:
+        EMA values
+    """
+    return series.ewm(span=period, adjust=False).mean()
+
+
+def ema_crossover(df: pd.DataFrame, fast_period=12, slow_period=26, volume_filter=True) -> pd.Series:
+    """
+    Detect EMA Crossover (Golden Cross).
+
+    Returns boolean Series: True when fast EMA crosses above slow EMA.
+
+    Rules:
+    - Fast EMA (default: 12) crosses above slow EMA (default: 26)
+    - Optional volume filter: volume > 20-day average
+    - Uses shift(1) to avoid look-ahead bias
+    """
+    fast_ema = calculate_ema(df['Close'], fast_period)
+    slow_ema = calculate_ema(df['Close'], slow_period)
+
+    # Detect crossover: fast crosses above slow
+    crossover = (fast_ema > slow_ema) & (fast_ema.shift(1) <= slow_ema.shift(1))
+
+    # Apply volume filter if enabled
+    if volume_filter and 'Volume' in df.columns:
+        avg_volume = df['Volume'].rolling(20).mean()
+        volume_check = df['Volume'] > avg_volume
+        crossover = crossover & volume_check
+
+    return crossover
+
+
+def calculate_macd(df: pd.DataFrame, fast=12, slow=26, signal=9):
+    """
+    Calculate MACD (Moving Average Convergence Divergence).
+
+    Args:
+        df: DataFrame with price data
+        fast: Fast EMA period (default: 12)
+        slow: Slow EMA period (default: 26)
+        signal: Signal line period (default: 9)
+
+    Returns:
+        tuple: (MACD line, Signal line, Histogram)
+    """
+    fast_ema = calculate_ema(df['Close'], fast)
+    slow_ema = calculate_ema(df['Close'], slow)
+
+    macd_line = fast_ema - slow_ema
+    signal_line = calculate_ema(macd_line, signal)
+    histogram = macd_line - signal_line
+
+    return macd_line, signal_line, histogram
+
+
+def macd_cross(df: pd.DataFrame, fast=12, slow=26, signal=9, histogram_confirm=True) -> pd.Series:
+    """
+    Detect MACD Cross with Histogram Confirmation.
+
+    Returns boolean Series: True when MACD crosses above signal line.
+
+    Rules:
+    - MACD line crosses above signal line
+    - Optional histogram confirmation: histogram must be positive and increasing
+    - Uses shift(1) to avoid look-ahead bias
+    """
+    macd_line, signal_line, histogram = calculate_macd(df, fast, slow, signal)
+
+    # Detect crossover: MACD crosses above signal
+    crossover = (macd_line > signal_line) & (macd_line.shift(1) <= signal_line.shift(1))
+
+    # Apply histogram confirmation if enabled
+    if histogram_confirm:
+        # Histogram positive and increasing
+        hist_positive = histogram > 0
+        hist_increasing = histogram > histogram.shift(1)
+        crossover = crossover & hist_positive & hist_increasing
+
+    return crossover
