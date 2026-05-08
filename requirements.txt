@@ -7,3 +7,4 @@ streamlit
 tqdm
 lxml
 html5lib
+Pillow
