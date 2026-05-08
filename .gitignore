@@ -34,7 +34,7 @@ env/
 
 # Project specific
 data/*.csv
-results/*.csv
+results/all_signals*.csv
 results/*.png
 leads.csv
 
