@@ -152,9 +152,9 @@ with st.sidebar:
     st.markdown("---")
 
     # Scanner control
-    st.subheader("🔄 Scanner")
+    st.subheader("Scanner")
 
-    if st.button("🚀 Run Full Scan", type="primary", use_container_width=True):
+    if st.button("Run Full Scan", type="primary", use_container_width=True):
         with st.spinner("Running scanner... This may take 3-5 minutes."):
             success, stdout, stderr = run_scanner()
             if success:
@@ -214,7 +214,7 @@ if results_df is None or results_df.empty:
     st.stop()
 
 # ==================== KPI CARDS ====================
-st.markdown("### 📊 Performance Overview")
+st.markdown("### Performance Overview")
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
@@ -242,7 +242,7 @@ with col5:
 st.markdown("---")
 
 # ==================== FILTERS ====================
-st.markdown("### 🔍 Filter Results")
+st.markdown("### Filter Results")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -278,7 +278,7 @@ st.caption(f"Showing {len(filtered_df)} of {len(results_df)} signals")
 st.markdown("---")
 
 # ==================== TOP SIGNALS TABLE ====================
-st.markdown("### 🏆 Top Signals (Ranked by Sharpe)")
+st.markdown("### Top Signals (Ranked by Sharpe)")
 
 # Format the display
 display_df = filtered_df.copy()
@@ -307,7 +307,7 @@ st.dataframe(
 st.markdown("---")
 
 # ==================== EQUITY CURVES ====================
-st.markdown("### 📈 Equity Curves (Normalized to $100K)")
+st.markdown("### Equity Curves (Normalized to $100K)")
 
 fig = go.Figure()
 
@@ -360,7 +360,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("---")
 
 # ==================== PATTERN COMPARISON ====================
-st.markdown("### 📊 Pattern Performance Comparison")
+st.markdown("### Pattern Performance Comparison")
 
 col1, col2 = st.columns(2)
 
@@ -411,7 +411,7 @@ with col2:
 st.markdown("---")
 
 # ==================== SIGNAL DEEP DIVE ====================
-st.markdown("### 🔍 Deep Dive: Explore Any Signal")
+st.markdown("### Deep Dive: Explore Any Signal")
 
 selected_idx = st.selectbox(
     "Select a signal to analyze",
@@ -483,7 +483,7 @@ with col2:
 
 # Show trade details if enabled
 if show_trades and ticker_df is not None:
-    st.markdown("#### 📋 Trade History")
+    st.markdown("#### Trade History")
 
     # Get signal
     signal = get_pattern_signal(ticker_df, row['pattern'])
