@@ -34,6 +34,9 @@ env/
 
 # Project specific
 data/*.csv
+!data/AAPL.csv
+!data/GOOGL.csv
+!data/MSFT.csv
 results/all_signals*.csv
 results/*.png
 leads.csv
