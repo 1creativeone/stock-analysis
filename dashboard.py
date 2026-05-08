@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+from PIL import Image
 import os
 import sys
 from datetime import datetime
@@ -19,9 +20,11 @@ from patterns import double_bottom, rsi_divergence, breakout_52w, ema_crossover,
 from backtester import vectorized_backtest
 
 # ==================== CONFIG ====================
+_favicon = Image.open("favicon.png") if os.path.exists("favicon.png") else "📊"
+
 st.set_page_config(
     page_title="Pattern Backtester — Do Not Copy Trade",
-    page_icon="📊",
+    page_icon=_favicon,
     layout="wide",
     initial_sidebar_state="expanded"
 )
