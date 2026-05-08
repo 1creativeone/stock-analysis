@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # dashboard.py
 """
-Smart Pattern Backtester - Interactive Dashboard
-
-Professional Streamlit dashboard for pattern analysis and lead generation.
+Pattern Backtester — Do Not Copy Trade
+Rule-based technical pattern analysis backed by historical data.
 """
 import streamlit as st
 import pandas as pd
@@ -21,8 +20,8 @@ from backtester import vectorized_backtest
 
 # ==================== CONFIG ====================
 st.set_page_config(
-    page_title="Smart Pattern Backtester",
-    page_icon="📈",
+    page_title="Pattern Backtester — Do Not Copy Trade",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -30,34 +29,62 @@ st.set_page_config(
 RESULT_DIR = "results"
 DATA_DIR = "data"
 TOP_CSV = f"{RESULT_DIR}/top_5.csv"
-LEADS_CSV = "leads.csv"
 
 # ==================== CUSTOM CSS ====================
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Manrope', sans-serif;
+    }
     .big-metric {
         font-size: 24px;
-        font-weight: bold;
-        color: #1f77b4;
+        font-weight: 700;
+        color: #4fc7bb;
     }
     .stMetric {
-        background-color: #f0f2f6;
+        background-color: #eeede8;
         padding: 10px;
-        border-radius: 5px;
+        border-radius: 6px;
+        border: 1px solid #d9d6cf;
+    }
+    .stMetric label {
+        color: #6b6356 !important;
+        font-size: 0.78rem !important;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    .stMetric [data-testid="stMetricValue"] {
+        color: #28251d !important;
+        font-weight: 700;
     }
     .success-box {
         padding: 10px;
-        background-color: #d4edda;
-        border-left: 4px solid #28a745;
+        background-color: #e6faf8;
+        border-left: 4px solid #4fc7bb;
         border-radius: 4px;
         margin: 10px 0;
     }
     .info-box {
         padding: 10px;
-        background-color: #d1ecf1;
-        border-left: 4px solid #17a2b8;
+        background-color: #f0faf9;
+        border-left: 4px solid #4fc7bb;
         border-radius: 4px;
         margin: 10px 0;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #efede9 !important;
+        border-right: 1px solid #d9d6cf;
+    }
+    .dataframe thead th {
+        background-color: #eeede8 !important;
+        color: #28251d !important;
+        font-weight: 700;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -103,21 +130,6 @@ def get_pattern_signal(df, pattern_name):
     return None
 
 
-def save_lead(email):
-    """Save email lead to CSV."""
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open(LEADS_CSV, 'a') as f:
-        f.write(f"{email},{timestamp}\n")
-
-
-def count_leads():
-    """Count total leads captured."""
-    if not os.path.exists(LEADS_CSV):
-        return 0
-    with open(LEADS_CSV, 'r') as f:
-        return len(f.readlines())
-
-
 def run_scanner():
     """Run the backtester scanner."""
     try:
@@ -134,8 +146,8 @@ def run_scanner():
 
 # ==================== SIDEBAR ====================
 with st.sidebar:
-    st.title("📈 Smart Pattern Backtester")
-    st.caption("Find patterns that work — with proof.")
+    st.markdown("### Do Not Copy Trade")
+    st.caption("Pattern Backtester — rule-based, no black boxes.")
 
     st.markdown("---")
 
@@ -162,30 +174,27 @@ with st.sidebar:
     st.markdown("---")
 
     # Settings
-    st.subheader("⚙️ Settings")
-    dark_mode = st.checkbox("🌙 Dark Mode", value=True)
-    show_trades = st.checkbox("📊 Show Trade Details", value=True)
+    st.subheader("Settings")
+    show_trades = st.checkbox("Show Trade Details", value=True)
 
     st.markdown("---")
 
     # Stats
-    st.subheader("📊 Stats")
-    leads = count_leads()
-    st.metric("Email Leads", leads)
-
+    st.subheader("Stats")
     if os.path.exists(DATA_DIR):
         cached_tickers = len([f for f in os.listdir(DATA_DIR) if f.endswith('.csv')])
         st.metric("Cached Tickers", cached_tickers)
 
     st.markdown("---")
-    st.caption("Built with Python, yfinance & Streamlit")
+    st.caption("Educational only. Not financial advice.")
+    st.caption("donotcopytrade.com")
 
 
 # ==================== MAIN CONTENT ====================
 
 # Header
-st.title("🎯 Top 5 High-Sharpe Pattern Signals")
-st.markdown("**Rule-based technical patterns backed by 10 years of historical data**")
+st.markdown("## Pattern Backtester")
+st.markdown("Rule-based technical patterns backed by 10 years of historical data. No AI, no black boxes. Educational only — not financial advice.")
 
 # Load results
 results_df = load_results()
@@ -302,7 +311,7 @@ st.markdown("### 📈 Equity Curves (Normalized to $100K)")
 
 fig = go.Figure()
 
-colors = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A"]
+colors = ["#4fc7bb", "#c2896e", "#7bbfa8", "#8ab4e8", "#d9a44a"]
 
 for idx, (_, row) in enumerate(results_df.head(5).iterrows()):
     ticker = row['ticker']
@@ -342,7 +351,7 @@ fig.update_layout(
         x=0.01,
         bgcolor="rgba(255,255,255,0.8)"
     ),
-    template="plotly_dark" if dark_mode else "plotly_white",
+    template="plotly_white",
     hovermode='x unified'
 )
 
@@ -363,7 +372,7 @@ with col1:
         go.Bar(
             x=pattern_sharpe.index,
             y=pattern_sharpe.values,
-            marker_color=['#636EFA', '#EF553B', '#00CC96'],
+            marker_color=['#4fc7bb', '#c2896e', '#7bbfa8'],
             text=pattern_sharpe.values.round(2),
             textposition='auto',
         )
@@ -372,7 +381,7 @@ with col1:
         title="Average Sharpe by Pattern",
         xaxis_title="Pattern",
         yaxis_title="Sharpe Ratio",
-        template="plotly_dark" if dark_mode else "plotly_white",
+        template="plotly_white",
         height=400
     )
     st.plotly_chart(fig_sharpe, use_container_width=True)
@@ -385,7 +394,7 @@ with col2:
         go.Bar(
             x=pattern_winrate.index,
             y=pattern_winrate.values * 100,
-            marker_color=['#00CC96', '#AB63FA', '#FFA15A'],
+            marker_color=['#7bbfa8', '#4fc7bb', '#d9a44a'],
             text=[f"{x:.1f}%" for x in pattern_winrate.values * 100],
             textposition='auto',
         )
@@ -394,7 +403,7 @@ with col2:
         title="Average Win Rate by Pattern",
         xaxis_title="Pattern",
         yaxis_title="Win Rate (%)",
-        template="plotly_dark" if dark_mode else "plotly_white",
+        template="plotly_white",
         height=400
     )
     st.plotly_chart(fig_wr, use_container_width=True)
@@ -465,7 +474,7 @@ with col2:
             title=f"{row['ticker']} — Last 12 Months",
             xaxis_title="Date",
             yaxis_title="Price ($)",
-            template="plotly_dark" if dark_mode else "plotly_white",
+            template="plotly_white",
             height=400,
             xaxis_rangeslider_visible=False
         )
@@ -516,53 +525,20 @@ if show_trades and ticker_df is not None:
 
 st.markdown("---")
 
-# ==================== LEAD CAPTURE ====================
-st.markdown("### 💌 Get Daily Signals in Your Inbox")
-
-st.markdown("""
-Stay ahead of the market! Get the top 5 high-Sharpe signals delivered to your inbox every morning.
-
-**What you'll get:**
-- Daily top 5 signals ranked by Sharpe ratio
-- Entry/exit rules for each pattern
-- 10-year backtest performance
-- 100% free, no credit card required
-""")
-
-with st.form("lead_form"):
-    col1, col2 = st.columns([3, 1])
-
-    with col1:
-        email = st.text_input("Your Email", placeholder="trader@example.com")
-
-    with col2:
-        st.write("")  # Spacer
-        st.write("")  # Spacer
-        submitted = st.form_submit_button("Subscribe", type="primary", use_container_width=True)
-
-    if submitted:
-        if email and "@" in email and "." in email:
-            save_lead(email)
-            st.success("🎉 Thanks! You're subscribed. First email coming tomorrow morning.")
-        else:
-            st.error("❌ Please enter a valid email address")
-
-st.markdown("---")
-
 # ==================== FOOTER ====================
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("**🎯 No AI. No ML. Just Logic.**")
+    st.markdown("**No AI. No ML. Just Logic.**")
     st.caption("100% rule-based, transparent, and auditable")
 
 with col2:
-    st.markdown("**📚 Open Source**")
-    st.caption("[View on GitHub](#) | [Transparency Report](./TRANSPARENCY.md)")
+    st.markdown("**Open Source**")
+    st.caption("All pattern logic is fully auditable")
 
 with col3:
-    st.markdown("**💬 Feedback**")
-    st.caption("Found a bug? [Report an issue](#)")
+    st.markdown("**Educational Only**")
+    st.caption("Not financial advice. See the [disclaimer](https://donotcopytrade.com/disclaimer).")
 
 st.markdown("---")
-st.caption(f"© {datetime.now().year} Smart Pattern Backtester | Built with ❤️ using Python")
+st.caption(f"© {datetime.now().year} Do Not Copy Trade | Pattern Backtester | Educational only — not financial advice")
