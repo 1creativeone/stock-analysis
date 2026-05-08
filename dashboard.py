@@ -101,7 +101,7 @@ def load_results():
         return None
     df = pd.read_csv(TOP_CSV)
     if 'latest_signal' in df.columns:
-        df['latest_signal'] = pd.to_datetime(df['latest_signal'])
+        df['latest_signal'] = pd.to_datetime(df['latest_signal'], format='mixed', utc=True).dt.tz_localize(None)
     return df
 
 
